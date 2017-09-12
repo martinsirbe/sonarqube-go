@@ -1,0 +1,29 @@
+machine:
+  services:
+    - docker
+dependencies:
+  pre:
+    - docker login -e none@none.com -u $DOCKER_USERNAME
+      -p $DOCKER_PASSWORD $DOCKER_REGISTRY
+  override:
+    - /bin/true
+deployment:
+  master:
+    branch:
+      - master
+    commands:
+      - docker build --build-arg SERVICE=$SERVICE --build-arg SONAR_VERSION=$SONAR_VERSION
+        --build-arg SONARQUBE_HOME=$SONARQUBE_HOME --build-arg SONARQUBE_HOME=$SONARQUBE_HOME
+        --build-arg SONARQUBE_USERNAME=$SONARQUBE_USERNAME --build-arg SONARQUBE_PASSWORD=$SONARQUBE_PASSWORD
+        --build-arg SONARQUBE_URL=$SONARQUBE_URL --build-arg GOLANG_PLUGIN_VERSION=$GOLANG_PLUGIN_VERSION -t
+        $DOCKER_REGISTRY/$NAMESPACE/$SERVICE:$CIRCLE_SHA1 .
+      - docker tag -f $DOCKER_REGISTRY/$NAMESPACE/$SERVICE:$CIRCLE_SHA1
+        $DOCKER_REGISTRY/$NAMESPACE/$SERVICE:latest
+      - docker push $DOCKER_REGISTRY/$NAMESPACE/$SERVICE
+  any:
+    branch:
+      - /^(?!master$).*$/ # anything but master branch
+    commands:
+      - docker build --build-arg SERVICE=$SERVICE -t $DOCKER_REGISTRY/$NAMESPACE/$SERVICE:$CIRCLE_SHA1 .
+      - docker tag -f $DOCKER_REGISTRY/$NAMESPACE/$SERVICE:$CIRCLE_SHA1 $DOCKER_REGISTRY/$NAMESPACE/$SERVICE:$CIRCLE_BRANCH
+      - docker push $DOCKER_REGISTRY/$NAMESPACE/$SERVICE
